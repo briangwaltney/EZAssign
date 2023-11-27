@@ -1,5 +1,3 @@
-SLASH_ASSIGN1 = "/ez"
-SLASH_ASSIGN2 = "/assign"
 SLASH_RESET1 = "/ezreset"
 SLASH_RESETDB1 = "/ezresetdb"
 SLASH_DB1 = "/ezdb"
@@ -27,11 +25,13 @@ end
 local defaultDB = {
 	lists = {
 		Default = {
-			prio = 1,
-			assignments = {},
+			{},
+			{},
+			{},
+			{},
+			{},
 		},
 	},
-	prio = 1,
 }
 
 EZAssignDB = EZAssignDB or defaultDB
@@ -40,6 +40,7 @@ M = {
 	nameInputs = {},
 	assignmentInputs = {},
 	currentList = "Default",
+	prio = 1,
 	myAssignments = {
 		"",
 		"",
@@ -66,26 +67,21 @@ M.textToRaidIcon = function(str)
 	return str
 end
 
-local SendAddonMessage = C_ChatInfo.SendAddonMessage
-
 M.createList = function(name)
-	local prio = EZAssignDB.prio
 	EZAssignDB.lists[name] = {
-		prio = prio,
-		assignments = {},
+		{},
+		{},
+		{},
+		{},
+		{},
 	}
-end
-
-M.assignIndividual = function(msg)
-	local name = UnitName("target")
-	SendChatMessage("ASSIGN " .. name .. " 1: " .. msg, "RAID")
 end
 
 M.assignList = function()
 	local list = EZAssignDB.lists[M.currentList]
 	if list ~= nil then
 		for _, assignment in ipairs(list.assignments) do
-			SendChatMessage("ASSIGN " .. assignment.name .. " " .. list.prio .. ": " .. assignment.assignment, "RAID")
+			SendChatMessage(assignment.name .. " " .. list.prio .. ": " .. assignment.assignment, "RAID")
 		end
 	else
 		print("List not found")
@@ -129,67 +125,67 @@ end
 
 -- ASSIGNMENT TEXT --
 
-M.assignmentTextFrame = CreateFrame("Frame", "EZAssignAssignment", UIParent, "BasicFrameTemplateWithInset")
-M.assignmentTextFrame:SetSize(200, 75)
-M.assignmentTextFrame:SetPoint("CENTER", 0, 0)
-M.assignmentTextFrame:EnableMouse(true)
-M.assignmentTextFrame:SetMovable(true)
-M.assignmentTextFrame:RegisterForDrag("LeftButton")
-M.assignmentTextFrame:SetScript("OnDragStart", M.assignmentTextFrame.StartMoving)
-M.assignmentTextFrame:SetScript("OnDragStop", M.assignmentTextFrame.StopMovingOrSizing)
-M.assignmentTextFrame.Title = M.assignmentTextFrame:CreateFontString(nil, "OVERLAY")
-M.assignmentTextFrame.Title:SetFontObject("GameFontHighlight")
-M.assignmentTextFrame.Title:SetPoint("CENTER", M.assignmentTextFrame.TitleBg, "CENTER", 11, 0)
-M.assignmentTextFrame.Title:SetText("My Assignments")
-M.assignmentTextFrame:Hide()
+-- M.assignmentTextFrame = CreateFrame("Frame", "EZAssignAssignment", UIParent, "BasicFrameTemplateWithInset")
+-- M.assignmentTextFrame:SetSize(200, 75)
+-- M.assignmentTextFrame:SetPoint("CENTER", 0, 0)
+-- M.assignmentTextFrame:EnableMouse(true)
+-- M.assignmentTextFrame:SetMovable(true)
+-- M.assignmentTextFrame:RegisterForDrag("LeftButton")
+-- M.assignmentTextFrame:SetScript("OnDragStart", M.assignmentTextFrame.StartMoving)
+-- M.assignmentTextFrame:SetScript("OnDragStop", M.assignmentTextFrame.StopMovingOrSizing)
+-- M.assignmentTextFrame.Title = M.assignmentTextFrame:CreateFontString(nil, "OVERLAY")
+-- M.assignmentTextFrame.Title:SetFontObject("GameFontHighlight")
+-- M.assignmentTextFrame.Title:SetPoint("CENTER", M.assignmentTextFrame.TitleBg, "CENTER", 11, 0)
+-- M.assignmentTextFrame.Title:SetText("My Assignments")
+-- M.assignmentTextFrame:Hide()
+--
+-- M.assignmentText = M.assignmentTextFrame:CreateFontString("EZAssignFrameContent", "OVERLAY", normalFont)
+-- M.assignmentText:SetPoint("TOPLEFT", 12, -32)
+-- M.assignmentText:SetJustifyH("LEFT")
+-- M.assignmentText:SetJustifyV("TOP")
+-- M.assignmentText:SetWidth(M.assignmentTextFrame:GetWidth() - 44)
+-- M.assignmentText:SetWordWrap(true)
+-- M.assignmentText:SetIndentedWordWrap(false)
+-- M.assignmentText:SetNonSpaceWrap(true)
+-- M.assignmentText:SetFont(STANDARD_TEXT_FONT, 14)
+-- M.assignmentText:SetSpacing(5)
+-- M.assignmentText:SetText("No assignments")
+-- M.assignmentText:SetHeight(56)
 
-M.assignmentText = M.assignmentTextFrame:CreateFontString("EZAssignFrameContent", "OVERLAY", normalFont)
-M.assignmentText:SetPoint("TOPLEFT", 12, -32)
-M.assignmentText:SetJustifyH("LEFT")
-M.assignmentText:SetJustifyV("TOP")
-M.assignmentText:SetWidth(M.assignmentTextFrame:GetWidth() - 44)
-M.assignmentText:SetWordWrap(true)
-M.assignmentText:SetIndentedWordWrap(false)
-M.assignmentText:SetNonSpaceWrap(true)
-M.assignmentText:SetFont(STANDARD_TEXT_FONT, 14)
-M.assignmentText:SetSpacing(5)
-M.assignmentText:SetText("No assignments")
-M.assignmentText:SetHeight(56)
-
-M.UpdateAssignment = function()
-	local length = 0
-	local lines = 0
-	local msg = ""
-	for i, assignment in ipairs(M.myAssignments) do
-		if string.len(assignment) > 0 then
-			length = length + string.len(assignment)
-			lines = lines + math.ceil(string.len(assignment) / 20)
-			msg = msg .. i .. ": " .. assignment .. "\n"
-		end
-	end
-	local height = 35 + (lines * 21)
-	M.assignmentTextFrame:SetSize(200, height)
-	M.assignmentText:SetText(msg)
-	M.assignmentTextFrame:Show()
-end
-
-M.assignmentTextFrame:RegisterEvent("CHAT_MSG_RAID")
-M.assignmentTextFrame:RegisterEvent("CHAT_MSG_RAID_LEADER")
-M.assignmentTextFrame:SetScript("OnEvent", function(self, event, msg, ...)
-	local myName = UnitName("player")
-	local pattern = "^ASSIGN " .. myName .. " "
-	local msgWithNum = string.match(msg, pattern) and string.sub(msg, string.len(string.match(msg, pattern)) + 1)
-	local num, str = string.match(msgWithNum, "^(%d):%s(.+)$")
-	local filtered = str:gsub("[{}]", "")
-	num = tonumber(num)
-	if not num then
-		return
-	end
-	M.myAssignments[num] = filtered
-	if num and str then
-		M.UpdateAssignment()
-	end
-end)
+-- M.UpdateAssignment = function()
+-- 	local length = 0
+-- 	local lines = 0
+-- 	local msg = ""
+-- 	for i, assignment in ipairs(M.myAssignments) do
+-- 		if string.len(assignment) > 0 then
+-- 			length = length + string.len(assignment)
+-- 			lines = lines + math.ceil(string.len(assignment) / 20)
+-- 			msg = msg .. i .. ": " .. assignment .. "\n"
+-- 		end
+-- 	end
+-- 	local height = 35 + (lines * 21)
+-- 	M.assignmentTextFrame:SetSize(200, height)
+-- 	M.assignmentText:SetText(msg)
+-- 	M.assignmentTextFrame:Show()
+-- end
+--
+-- M.assignmentTextFrame:RegisterEvent("CHAT_MSG_RAID")
+-- M.assignmentTextFrame:RegisterEvent("CHAT_MSG_RAID_LEADER")
+-- M.assignmentTextFrame:SetScript("OnEvent", function(self, event, msg, ...)
+-- 	local myName = UnitName("player")
+-- 	local pattern = "^ASSIGN " .. myName .. " "
+-- 	local msgWithNum = string.match(msg, pattern) and string.sub(msg, string.len(string.match(msg, pattern)) + 1)
+-- 	local num, str = string.match(msgWithNum, "^(%d):%s(.+)$")
+-- 	local filtered = str:gsub("[{}]", "")
+-- 	num = tonumber(num)
+-- 	if not num then
+-- 		return
+-- 	end
+-- 	M.myAssignments[num] = filtered
+-- 	if num and str then
+-- 		M.UpdateAssignment()
+-- 	end
+-- end)
 
 -- User interface
 
@@ -225,9 +221,9 @@ M.assignmentLabel:SetFont(STANDARD_TEXT_FONT, 12)
 M.assignmentLabel:SetSpacing(5)
 M.assignmentLabel:SetText("Assignment")
 
-M.deleteListButton = CreateFrame("Button", "EZAssignDeleteListButton", M.mainFrame, "UIPanelButtonTemplate")
+M.deleteListButton = CreateFrame("Button", "EZAssignDeleteListButton", M.mainFrame.ScrollChild, "UIPanelButtonTemplate")
 M.deleteListButton:SetSize(80, 18)
-M.deleteListButton:SetPoint("TOPRIGHT", M.mainFrame, "TOPRIGHT", -40, -30)
+M.deleteListButton:SetPoint("TOPRIGHT", M.mainFrame.ScrollChild, "TOPRIGHT", -20, -5)
 M.deleteListButton:SetText("Delete List")
 M.deleteListButton:SetScript("OnClick", function()
 	EZAssignDB.lists[M.currentList] = nil
@@ -236,30 +232,30 @@ M.deleteListButton:SetScript("OnClick", function()
 		break
 	end
 	M.mainFrame.Title:SetText(M.currentList)
-	M.displayList(M.currentList)
 	M.createListButtons()
+	M.displayList(M.currentList)
 end)
 
 M.modifyAssignmentName = function(idx, name)
-	if not EZAssignDB.lists[M.currentList].assignments[idx] then
-		EZAssignDB.lists[M.currentList].assignments[idx] = {}
+	if not EZAssignDB.lists[M.currentList][M.prio][idx] then
+		EZAssignDB.lists[M.currentList][M.prio][idx] = {}
 	end
-	EZAssignDB.lists[M.currentList].assignments[idx].name = name
+	EZAssignDB.lists[M.currentList][M.prio][idx].name = name
 end
 
 M.modifyAssignment = function(idx, assignment)
-	if not EZAssignDB.lists[M.currentList].assignments[idx] then
-		EZAssignDB.lists[M.currentList].assignments[idx] = {}
+	if not EZAssignDB.lists[M.currentList][M.prio][idx] then
+		EZAssignDB.lists[M.currentList][M.prio][idx] = {}
 	end
-	EZAssignDB.lists[M.currentList].assignments[idx].assignment = assignment
+	EZAssignDB.lists[M.currentList][M.prio][idx].assignment = assignment
 end
 
 M.createListInputs = function()
 	for i = 1, 40 do
 		local name = "EZAssign_NameInput_" .. i
 		local default = ""
-		if EZAssignDB.lists[M.currentList].assignments[i] then
-			default = EZAssignDB.lists[M.currentList].assignments[i].name or ""
+		if EZAssignDB.lists[M.currentList][M.prio][i] then
+			default = EZAssignDB.lists[M.currentList][M.prio][i].name or ""
 		end
 		local textBox = M.createInputBox({
 			text = default,
@@ -276,8 +272,8 @@ M.createListInputs = function()
 	for i = 1, 40 do
 		local name = "EZAssign_AssignmentInput_" .. i
 		local default = ""
-		if EZAssignDB.lists[M.currentList].assignments[i] then
-			default = EZAssignDB.lists[M.currentList].assignments[i].assignment or ""
+		if EZAssignDB.lists[M.currentList][M.prio][i] then
+			default = EZAssignDB.lists[M.currentList][M.prio][i].assignment or ""
 		end
 		local textBox = M.createInputBox({
 			text = default,
@@ -294,11 +290,11 @@ M.createListInputs = function()
 	end
 end
 
-M.togglePrio = function()
+M.togglePrio = function(newPrio)
+	M.prio = newPrio
 	for i, item in pairs(M.prioButtons) do
-		if i == EZAssignDB.prio then
+		if i == M.prio then
 			item.button:SetNormalTexture(item.highlight)
-			EZAssignDB.lists[M.currentList].prio = i
 		else
 			item.button:SetNormalTexture(item.button:CreateTexture())
 		end
@@ -316,12 +312,12 @@ M.createPrioButtons = function()
 		toggleButton:SetSize(120, 22)
 		toggleButton:SetPoint("TOPLEFT", M.mainFrame, "TOPLEFT", (i - 1) * 120, 22)
 		toggleButton:HookScript("OnClick", function(self)
-			EZAssignDB.prio = i
-			M.togglePrio()
+			M.togglePrio(i)
+			M.displayList(M.currentList)
 		end)
 		table.insert(M.prioButtons, { button = toggleButton, highlight = highlightTexture })
 	end
-	M.togglePrio()
+	M.togglePrio(M.prio)
 end
 
 -- TOGGLE BUTTON
@@ -341,24 +337,24 @@ M.toggleButton:HookScript("OnClick", function()
 	end
 end)
 
-M.showMyAssignmentsButton = CreateFrame("Button", "EzAssignToggleButton", M.toggleButton, "GameMenuButtonTemplate")
-M.showMyAssignmentsButton:SetText("My Assignments")
-M.showMyAssignmentsButton:SetSize(120, 22)
-M.showMyAssignmentsButton:SetPoint("RIGHT", M.toggleButton, "LEFT", 0, 0)
-M.showMyAssignmentsButton:HookScript("OnClick", function()
-	if M.assignmentTextFrame:IsShown() then
-		M.assignmentTextFrame:Hide()
-	else
-		M.assignmentTextFrame:Show()
-	end
-end)
+-- M.showMyAssignmentsButton = CreateFrame("Button", "EzAssignToggleButton", M.toggleButton, "GameMenuButtonTemplate")
+-- M.showMyAssignmentsButton:SetText("My Assignments")
+-- M.showMyAssignmentsButton:SetSize(120, 22)
+-- M.showMyAssignmentsButton:SetPoint("RIGHT", M.toggleButton, "LEFT", 0, 0)
+-- M.showMyAssignmentsButton:HookScript("OnClick", function()
+-- 	if M.assignmentTextFrame:IsShown() then
+-- 		M.assignmentTextFrame:Hide()
+-- 	else
+-- 		M.assignmentTextFrame:Show()
+-- 	end
+-- end)
 
 M.IssueAssignmentsButton = CreateFrame("Button", "EzAssignToggleButton", M.mainFrame, "GameMenuButtonTemplate")
 M.IssueAssignmentsButton:SetText("Issue Assignments")
 M.IssueAssignmentsButton:SetSize(150, 22)
 M.IssueAssignmentsButton:SetPoint("TOPRIGHT", M.mainFrame, "TOPRIGHT", 0, 44)
 M.IssueAssignmentsButton:HookScript("OnClick", function()
-	SendChatMessage("ASSIGMENTS SET", "RAID_WARNING")
+	SendChatMessage("ASSIGNMENTS SET - " .. M.currentList, "RAID_WARNING")
 	M.assignList(M.currentList)
 end)
 
@@ -367,18 +363,19 @@ M.newListButton:SetText("Create New List")
 M.newListButton:SetSize(150, 22)
 M.newListButton:SetPoint("TOPRIGHT", M.mainFrame, "BOTTOMRIGHT", 0, 0)
 M.newListButton:HookScript("OnClick", function()
-	if EZAssignDB.lists[M.createListInput:GetText()] then
+	if EZAssignDB.lists[M.newListInput:GetText()] then
 		print("List already exists")
 		return
 	end
-	M.createList(M.createListInput:GetText())
-	M.currentList = M.createListInput:GetText()
-	M.displayList(M.currentList)
+	M.createList(M.newListInput:GetText())
+	M.currentList = M.newListInput:GetText()
+	M.togglePrio(1)
 	M.createListButtons()
-	M.createListInput:SetText("")
+	M.displayList(M.currentList)
+	M.newListInput:SetText("")
 end)
 
-M.createListInput = M.createInputBox({
+M.newListInput = M.createInputBox({
 	name = "EZAssign_CreateListInput",
 	parent = M.newListButton,
 	width = 120,
@@ -388,25 +385,22 @@ M.createListInput = M.createInputBox({
 		end
 	end,
 })
-M.createListInput:SetPoint("RIGHT", M.newListButton, "LEFT", 0, 0)
+M.newListInput:SetPoint("RIGHT", M.newListButton, "LEFT", 0, 0)
 
 M.displayList = function(listName)
-	local list = EZAssignDB.lists[listName]
-
+	local list = EZAssignDB.lists[listName][M.prio] or {}
 	M.currentList = listName
-	EZAssignDB.prio = list.prio or 1
-	M.togglePrio()
 	M.mainFrame.Title:SetText(listName .. " Assignments")
 	for i, item in pairs(M.nameInputs) do
-		if list.assignments[i] then
-			item:SetText(list.assignments[i].name or "")
+		if list[i] ~= nil then
+			item:SetText(list[i].name or "")
 		else
 			item:SetText("")
 		end
 	end
 	for i, item in pairs(M.assignmentInputs) do
-		if list.assignments[i] then
-			item:SetText(list.assignments[i].assignment or "")
+		if list[i] ~= nil then
+			item:SetText(list[i].assignment or "")
 		else
 			item:SetText("")
 		end
@@ -479,7 +473,6 @@ addonF:SetScript("OnEvent", function(self, event, ...)
 	end
 end)
 
-SlashCmdList["ASSIGN"] = M.assignIndividual
 SlashCmdList["RESET"] = M.resetCurrentAssignments
 SlashCmdList["RESETDB"] = M.resetDB
 SlashCmdList["DB"] = function()
