@@ -78,10 +78,10 @@ M.createList = function(name)
 end
 
 M.assignList = function()
-	local list = EZAssignDB.lists[M.currentList]
+	local list = EZAssignDB.lists[M.currentList][M.prio]
 	if list ~= nil then
-		for _, assignment in ipairs(list.assignments) do
-			SendChatMessage(assignment.name .. " " .. list.prio .. ": " .. assignment.assignment, "RAID")
+		for _, assignment in ipairs(list) do
+			SendChatMessage(assignment.name .. " " .. M.prio .. ": " .. assignment.assignment, "RAID")
 		end
 	else
 		print("List not found")
@@ -355,7 +355,7 @@ M.IssueAssignmentsButton:SetSize(150, 22)
 M.IssueAssignmentsButton:SetPoint("TOPRIGHT", M.mainFrame, "TOPRIGHT", 0, 44)
 M.IssueAssignmentsButton:HookScript("OnClick", function()
 	SendChatMessage("ASSIGNMENTS SET - " .. M.currentList, "RAID_WARNING")
-	M.assignList(M.currentList)
+	M.assignList()
 end)
 
 M.newListButton = CreateFrame("Button", "EzAssignToggleButton", M.mainFrame, "GameMenuButtonTemplate")
