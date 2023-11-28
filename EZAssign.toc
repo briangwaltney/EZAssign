@@ -2,7 +2,7 @@
 ## Title: EZAssign
 ## Notes: Making Ram's life easier part 2
 ## Author: Tesla
-## Version: 0.1.0
+## Version: 0.1.1
 ## SavedVariables: EZAssignDB
 
 EZAssign.lua
