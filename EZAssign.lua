@@ -1,13 +1,9 @@
 SLASH_RESET1 = "/ezreset"
 SLASH_RESETDB1 = "/ezresetdb"
 SLASH_DB1 = "/ezdb"
-SLASH_CREATELIST1 = "/ezCreateList"
 SLASH_DELETELIST1 = "/ezdelete"
 SLASH_ASSIGNLIST1 = "/ezassignlist"
-
--- Default colors
-local headerFont = "GameFontNormal"
-local normalFont = "GameFontHighlight"
+SLASH_SHOWFRAME1 = "/ezshow"
 
 local function printTableValues(tbl, indent)
 	indent = indent or 0
@@ -156,6 +152,16 @@ M.assignList = function()
 	end
 end
 
+M.resetCurrentAssignments = function()
+	for i = 1, 5 do
+		M.myAssignments[i] = ""
+	end
+end
+
+M.sendReset = function()
+	SendAddonMessage("EZAssign", "reset", "RAID")
+end
+
 M.deleteList = function(listName)
 	EZAssignDB.lists[listName] = nil
 	for name, _ in pairs(EZAssignDB.lists) do
@@ -242,6 +248,9 @@ M.assignmentTextFrame:SetScript("OnEvent", function(self, event, msg, ...)
 	local prioReset = msg:match("ASSIGNMENTS SET .- (%d+)$")
 	if prioReset then
 		M.givenPrio = tonumber(prioReset)
+		if M.givenPrio == 1 then
+			M.resetCurrentAssignments()
+		end
 		return
 	end
 	local myName = UnitName("player")
@@ -258,9 +267,9 @@ end)
 
 -- User interface
 
-M.mainFrame = CreateFrame("Frame", "EZAssignMainFrame", RaidFrame, "BasicFrameTemplateWithInset")
+M.mainFrame = CreateFrame("Frame", "EZAssignMainFrame", UIParent, "BasicFrameTemplateWithInset")
 M.mainFrame:SetSize(800, RaidFrame:GetHeight() + 420)
-M.mainFrame:SetPoint("LEFT", RaidFrame, "RIGHT", 10, 0)
+M.mainFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 M.mainFrame.Title = M.mainFrame:CreateFontString(nil, "OVERLAY")
 M.mainFrame.Title:SetFontObject("GameFontHighlight")
 M.mainFrame.Title:SetPoint("CENTER", M.mainFrame.TitleBg, "CENTER", 11, 0)
@@ -271,6 +280,24 @@ M.mainFrame.ScrollFrame:SetPoint("BOTTOMRIGHT", M.mainFrame, "BOTTOMRIGHT", -31,
 M.mainFrame.ScrollChild = CreateFrame("Frame", nil, M.mainFrame.ScrollFrame)
 M.mainFrame.ScrollChild:SetSize(M.mainFrame:GetWidth(), M.mainFrame:GetHeight() - 100)
 M.mainFrame.ScrollFrame:SetScrollChild(M.mainFrame.ScrollChild)
+M.mainFrame:EnableMouse(true)
+M.mainFrame:SetMovable(true)
+M.mainFrame:RegisterForDrag("LeftButton")
+M.mainFrame:SetScript("OnDragStart", M.mainFrame.StartMoving)
+M.mainFrame:SetScript("OnDragStop", M.mainFrame.StopMovingOrSizing)
+M.mainFrame:Hide()
+
+M.DropdownFrame = CreateFrame("Frame", "EZAssign_DropdownFrame", M.mainFrame.ScrollChild, "InsetFrameTemplate")
+M.DropdownFrame:SetSize(300, 300)
+M.DropdownFrame:SetPoint("TOPRIGHT", M.mainFrame.ScrollChild, "TOPRIGHT", -30, -20)
+M.DropdownFrame:SetFrameStrata("DIALOG")
+M.DropdownFrame.ScrollFrame = CreateFrame("ScrollFrame", nil, M.DropdownFrame, "UIPanelScrollFrameTemplate")
+M.DropdownFrame.ScrollFrame:SetPoint("TOPLEFT", M.DropdownFrame, "TOPLEFT", -26, -6)
+M.DropdownFrame.ScrollFrame:SetPoint("BOTTOMRIGHT", M.DropdownFrame, "BOTTOMRIGHT", -28, 6)
+M.DropdownFrame.ScrollChild = CreateFrame("Frame", nil, M.DropdownFrame.ScrollFrame)
+M.DropdownFrame.ScrollChild:SetSize(M.DropdownFrame:GetWidth(), M.DropdownFrame:GetHeight() - 100)
+M.DropdownFrame.ScrollFrame:SetScrollChild(M.DropdownFrame.ScrollChild)
+M.DropdownFrame:Hide()
 
 M.ListNameInput = CreateFrame("EditBox", "EZAssign_List_Name", M.mainFrame.ScrollChild, "InputBoxTemplate")
 M.ListNameInput:SetAutoFocus(false)
@@ -517,27 +544,53 @@ M.displayList = function(listName)
 	end
 end
 
+M.ListDropdownToggle =
+	CreateFrame("Button", "EzAssignDropDownToggle", M.mainFrame.ScrollChild, "GameMenuButtonTemplate")
+M.ListDropdownToggle:SetText("Change List")
+M.ListDropdownToggle:SetSize(120, 22)
+M.ListDropdownToggle:SetPoint("TOPRIGHT", M.mainFrame.ScrollChild, "TOPRIGHT", -5, 0)
+M.ListDropdownToggle:HookScript("OnClick", function()
+	if M.DropdownFrame:IsShown() then
+		M.DropdownFrame:Hide()
+	else
+		M.DropdownFrame:Show()
+	end
+end)
+
+M.CreateDropDownButton = function(listName)
+	local button = CreateFrame(
+		"Button",
+		"EzAssignDropDownButton_" .. listName,
+		M.DropdownFrame.ScrollChild,
+		"GameMenuButtonTemplate"
+	)
+	button:SetText(listName)
+	button:SetSize(270, 22)
+	button:HookScript("OnClick", function()
+		M.displayList(listName)
+		M.DropdownFrame:Hide()
+	end)
+	return button
+end
+
 M.CreateListDropDowns = function()
-	if M.listDD then
-		M.listDD:Hide()
-		M.listDD = nil
+	if M.listDDs then
+		for _, dd in ipairs(M.listDDs) do
+			dd:Hide()
+		end
+	else
+		M.listDDs = {}
 	end
 	local listNames = {}
 	for k in pairs(EZAssignDB.lists) do
 		table.insert(listNames, k)
 	end
 	table.sort(listNames)
-	local ddSetup = {
-		["name"] = "EZAssign_ListDropDown",
-		["parent"] = M.mainFrame.ScrollChild,
-		["items"] = listNames,
-		["defaultVal"] = M.currentList,
-		["changeFunc"] = function(dropdown_frame, dropdown_val)
-			M.displayList(dropdown_val)
-		end,
-	}
-	M.listDD = createDropdown(ddSetup)
-	M.listDD:SetPoint("TOPRIGHT", M.mainFrame.ScrollChild, "TOPRIGHT", -5, 0)
+	for i, list in ipairs(listNames) do
+		local button = M.CreateDropDownButton(list)
+		button:SetPoint("TOPLEFT", M.DropdownFrame.ScrollChild, "TOPLEFT", 30, -22 * (i - 1))
+		table.insert(M.listDDs, button)
+	end
 end
 
 M.mainFrame:RegisterEvent("CHAT_MSG_RAID")
@@ -575,3 +628,6 @@ end
 SlashCmdList["CREATELIST"] = M.createList
 SlashCmdList["DELETELIST"] = M.deleteList
 SlashCmdList["ASSIGNLIST"] = M.assignList
+SlashCmdList["SHOWFRAME"] = function()
+	M.mainFrame:Show()
+end
