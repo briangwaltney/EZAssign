@@ -427,7 +427,7 @@ M.SaveListNameButton:HookScript("OnClick", function()
 end)
 
 M.headerName = M.mainFrame:CreateFontString("EZAssignFrameNameLabel", "OVERLAY", normalFont)
-M.headerName:SetPoint("TOPLEFT", 15, -55)
+M.headerName:SetPoint("TOPLEFT", 15, -65)
 M.headerName:SetJustifyH("LEFT")
 M.headerName:SetJustifyV("TOP")
 M.headerName:SetWidth(120)
@@ -436,7 +436,7 @@ M.headerName:SetSpacing(5)
 M.headerName:SetText("Name")
 
 M.headerAssignment = M.mainFrame:CreateFontString("EZAssignFrameAssignmentLabel", "OVERLAY", normalFont)
-M.headerAssignment:SetPoint("TOPLEFT", 155, -55)
+M.headerAssignment:SetPoint("TOPLEFT", 155, -65)
 M.headerAssignment:SetJustifyH("LEFT")
 M.headerAssignment:SetJustifyV("TOP")
 M.headerAssignment:SetWidth(200)
@@ -462,18 +462,6 @@ M.IssueAssignmentsButton:HookScript("OnClick", function()
 	M.assignList()
 end)
 
-M.newListInput = M.createInputBox({
-	name = "EZAssign_CreateListInput",
-	parent = M.newListButton,
-	width = 120,
-	onTextChanged = function(self, userInput)
-		if userInput then
-			M.modifyListName(self:GetText())
-		end
-	end,
-})
-M.newListInput:SetPoint("RIGHT", M.newListButton, "LEFT", 0, 0)
-
 M.newListButton = CreateFrame("Button", "EzAssignToggleButton", M.mainFrame, "GameMenuButtonTemplate")
 M.newListButton:SetText("Create New List")
 M.newListButton:SetSize(150, 22)
@@ -490,6 +478,14 @@ M.newListButton:HookScript("OnClick", function()
 	M.displayList(M.currentList)
 	M.newListInput:SetText("")
 end)
+
+M.newListInput = M.createInputBox({
+	name = "EZAssign_CreateListInput",
+	parent = M.newListButton,
+	width = 120,
+	onTextChanged = function() end,
+})
+M.newListInput:SetPoint("RIGHT", M.newListButton, "LEFT", 0, 0)
 
 M.ListDropdownToggle = CreateFrame("Button", "EzAssignDropDownToggle", M.mainFrame, "GameMenuButtonTemplate")
 M.ListDropdownToggle:SetText("Change List")
