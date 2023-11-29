@@ -31,7 +31,7 @@ local defaultDB = {
 }
 
 EZAssignDB = EZAssignDB or defaultDB
-M = {
+local M = {
 	nameInputs = {},
 	assignmentInputs = {},
 	currentList = "Default",
@@ -151,33 +151,6 @@ M.createInputBox = function(opts)
 	return textBox
 end
 
--- ASSIGNMENT TEXT --
-
-M.assignmentTextFrame = CreateFrame("Frame", "EZAssignAssignment", UIParent, "BasicFrameTemplateWithInset")
-M.assignmentTextFrame:SetSize(250, 150)
-M.assignmentTextFrame:SetPoint("CENTER", 0, 0)
-M.assignmentTextFrame:EnableMouse(true)
-M.assignmentTextFrame:SetMovable(true)
-M.assignmentTextFrame:RegisterForDrag("LeftButton")
-M.assignmentTextFrame:SetScript("OnDragStart", M.assignmentTextFrame.StartMoving)
-M.assignmentTextFrame:SetScript("OnDragStop", M.assignmentTextFrame.StopMovingOrSizing)
-
-M.assignmentTextFrame.Title = M.assignmentTextFrame:CreateFontString(nil, "OVERLAY")
-M.assignmentTextFrame.Title:SetFontObject("GameFontHighlight")
-M.assignmentTextFrame.Title:SetPoint("CENTER", M.assignmentTextFrame.TitleBg, "CENTER", 11, 0)
-M.assignmentTextFrame.Title:SetText("My Assignments")
-M.assignmentTextFrame:Hide()
-
-M.assignmentText = M.assignmentTextFrame:CreateFontString("EZAssignFrameContent", "OVERLAY", normalFont)
-M.assignmentText:SetPoint("TOPLEFT", 12, -32)
-M.assignmentText:SetJustifyH("LEFT")
-M.assignmentText:SetJustifyV("TOP")
-M.assignmentText:SetWidth(M.assignmentTextFrame:GetWidth() - 44)
-M.assignmentText:SetNonSpaceWrap(true)
-M.assignmentText:SetFont(STANDARD_TEXT_FONT, 14)
-M.assignmentText:SetSpacing(5)
-M.assignmentText:SetText("No assignments")
-
 M.UpdateAssignment = function()
 	local msg = ""
 	for i, assignment in ipairs(M.myAssignments) do
@@ -185,125 +158,11 @@ M.UpdateAssignment = function()
 			msg = msg .. i .. ": " .. assignment .. "\n"
 		end
 	end
-	M.assignmentText:SetText(msg)
-	local height = M.assignmentText:GetHeight()
-	M.assignmentTextFrame:SetHeight(M.Max(height * 1.3, 150))
-	M.assignmentTextFrame:Show()
+	M.MyAssignmentsText:SetText(msg)
+	local height = M.MyAssignmentsText:GetHeight()
+	M.MyAssignmentsFrame:SetHeight(M.Max(height * 1.3, 150))
+	M.MyAssignmentsFrame:Show()
 end
-
-M.assignmentTextFrame:RegisterEvent("CHAT_MSG_RAID")
-M.assignmentTextFrame:RegisterEvent("CHAT_MSG_RAID_LEADER")
-M.assignmentTextFrame:RegisterEvent("CHAT_MSG_RAID_WARNING")
-M.assignmentTextFrame:SetScript("OnEvent", function(self, event, msg, ...)
-	local prioReset = msg:match("ASSIGNMENTS SET .- (%d+)$")
-	if prioReset then
-		M.givenPrio = tonumber(prioReset)
-		if M.givenPrio == 1 then
-			M.resetCurrentAssignments()
-		end
-		return
-	end
-	local myName = UnitName("player")
-	local name, str = msg:match("^(.+): (.+)$")
-	local filtered = str:gsub("[{}]", "")
-	if name ~= myName then
-		return
-	end
-	M.myAssignments[M.givenPrio] = filtered
-	if str then
-		M.UpdateAssignment()
-	end
-end)
-
--- User interface
-
-M.mainFrame = CreateFrame("Frame", "EZAssignMainFrame", UIParent, "BasicFrameTemplateWithInset")
-M.mainFrame:SetSize(800, RaidFrame:GetHeight() + 420)
-M.mainFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-M.mainFrame.Title = M.mainFrame:CreateFontString(nil, "OVERLAY")
-M.mainFrame.Title:SetFontObject("GameFontHighlight")
-M.mainFrame.Title:SetPoint("CENTER", M.mainFrame.TitleBg, "CENTER", 11, 0)
-M.mainFrame.Title:SetText("Default Assignments")
-M.mainFrame.ScrollFrame = CreateFrame("ScrollFrame", nil, M.mainFrame, "UIPanelScrollFrameTemplate")
-M.mainFrame.ScrollFrame:SetPoint("TOPLEFT", M.mainFrame, "TOPLEFT", -26, -28)
-M.mainFrame.ScrollFrame:SetPoint("BOTTOMRIGHT", M.mainFrame, "BOTTOMRIGHT", -31, 6)
-M.mainFrame.ScrollChild = CreateFrame("Frame", nil, M.mainFrame.ScrollFrame)
-M.mainFrame.ScrollChild:SetSize(M.mainFrame:GetWidth(), M.mainFrame:GetHeight() - 100)
-M.mainFrame.ScrollFrame:SetScrollChild(M.mainFrame.ScrollChild)
-M.mainFrame:EnableMouse(true)
-M.mainFrame:SetMovable(true)
-M.mainFrame:RegisterForDrag("LeftButton")
-M.mainFrame:SetScript("OnDragStart", M.mainFrame.StartMoving)
-M.mainFrame:SetScript("OnDragStop", M.mainFrame.StopMovingOrSizing)
-M.mainFrame:Hide()
-
-M.DropdownFrame = CreateFrame("Frame", "EZAssign_DropdownFrame", M.mainFrame.ScrollChild, "InsetFrameTemplate")
-M.DropdownFrame:SetSize(300, 300)
-M.DropdownFrame:SetPoint("TOPRIGHT", M.mainFrame.ScrollChild, "TOPRIGHT", -30, -20)
-M.DropdownFrame:SetFrameStrata("DIALOG")
-M.DropdownFrame.ScrollFrame = CreateFrame("ScrollFrame", nil, M.DropdownFrame, "UIPanelScrollFrameTemplate")
-M.DropdownFrame.ScrollFrame:SetPoint("TOPLEFT", M.DropdownFrame, "TOPLEFT", -26, -6)
-M.DropdownFrame.ScrollFrame:SetPoint("BOTTOMRIGHT", M.DropdownFrame, "BOTTOMRIGHT", -28, 6)
-M.DropdownFrame.ScrollChild = CreateFrame("Frame", nil, M.DropdownFrame.ScrollFrame)
-M.DropdownFrame.ScrollChild:SetSize(M.DropdownFrame:GetWidth(), M.DropdownFrame:GetHeight() - 100)
-M.DropdownFrame.ScrollFrame:SetScrollChild(M.DropdownFrame.ScrollChild)
-M.DropdownFrame:Hide()
-
-M.ListNameInput = CreateFrame("EditBox", "EZAssign_List_Name", M.mainFrame.ScrollChild, "InputBoxTemplate")
-M.ListNameInput:SetAutoFocus(false)
-M.ListNameInput:SetFontObject("GameFontHighlightSmall")
-M.ListNameInput:SetHeight(22)
-M.ListNameInput:SetWidth(string.len(M.currentList) * 6)
-M.ListNameInput:SetJustifyH("LEFT")
-M.ListNameInput:EnableMouse(true)
-M.ListNameInput:SetMaxLetters(240)
-M.ListNameInput:SetTextInsets(0, 5, 2, 0)
-M.ListNameInput:SetText(M.currentList)
-M.ListNameInput:SetPoint("TOPLEFT", M.mainFrame.ScrollChild, "TOPLEFT", 42, 0)
-
-M.ListNameSaveButton = CreateFrame("Button", "EzAssignLisNameSaveButton", M.ListNameInput, "GameMenuButtonTemplate")
-M.ListNameSaveButton:SetText("Save List Name")
-M.ListNameSaveButton:SetSize(120, 22)
-M.ListNameSaveButton:SetPoint("LEFT", M.ListNameInput, "RIGHT", 10, 0)
-M.ListNameSaveButton:HookScript("OnClick", function()
-	local newName = M.ListNameInput:GetText()
-	if newName == "" then
-		print("List must have a name")
-		return
-	end
-	EZAssignDB.lists[newName] = EZAssignDB.lists[M.currentList]
-	EZAssignDB.lists[M.currentList] = nil
-	M.currentList = newName
-	M.CreateListDropDowns()
-	M.displayList(M.currentList)
-end)
-
-M.nameLabel = M.mainFrame.ScrollChild:CreateFontString("EZAssignFrameNameLabel", "OVERLAY", normalFont)
-M.nameLabel:SetPoint("TOPLEFT", 40, -34)
-M.nameLabel:SetJustifyH("LEFT")
-M.nameLabel:SetJustifyV("TOP")
-M.nameLabel:SetWidth(120)
-M.nameLabel:SetFont(STANDARD_TEXT_FONT, 12)
-M.nameLabel:SetSpacing(5)
-M.nameLabel:SetText("Name")
-
-M.assignmentLabel = M.mainFrame.ScrollChild:CreateFontString("EZAssignFrameAssignmentLabel", "OVERLAY", normalFont)
-M.assignmentLabel:SetPoint("TOPLEFT", 180, -34)
-M.assignmentLabel:SetJustifyH("LEFT")
-M.assignmentLabel:SetJustifyV("TOP")
-M.assignmentLabel:SetWidth(200)
-M.assignmentLabel:SetFont(STANDARD_TEXT_FONT, 12)
-M.assignmentLabel:SetSpacing(5)
-M.assignmentLabel:SetText("Assignment")
-
-M.assignmentLabel = M.mainFrame.ScrollChild:CreateFontString("EZAssignFrameAssignmentLabel", "OVERLAY", normalFont)
-M.assignmentLabel:SetPoint("TOPRIGHT", -20, -34)
-M.assignmentLabel:SetJustifyH("RIGHT")
-M.assignmentLabel:SetJustifyV("TOP")
-M.assignmentLabel:SetWidth(250)
-M.assignmentLabel:SetFont(STANDARD_TEXT_FONT, 12)
-M.assignmentLabel:SetSpacing(5)
-M.assignmentLabel:SetText("To delete: /ezdelete NameOfList")
 
 M.modifyAssignmentName = function(idx, name)
 	if not EZAssignDB.lists[M.currentList][M.prio][idx] then
@@ -345,7 +204,7 @@ M.createListInputs = function()
 				end
 			end,
 		})
-		textBox:SetPoint("TOPLEFT", 42, -25 * i - 30)
+		textBox:SetPoint("TOPLEFT", 42, -25 * (i - 1))
 		table.insert(M.nameInputs, textBox)
 	end
 	for i = 1, 40 do
@@ -364,7 +223,7 @@ M.createListInputs = function()
 				end
 			end,
 		})
-		textBox:SetPoint("TOPLEFT", 42 + 145, -25 * i - 30)
+		textBox:SetPoint("TOPLEFT", 42 + 145, -25 * (i - 1))
 		table.insert(M.assignmentInputs, textBox)
 	end
 	for i = 1, 40 do
@@ -388,27 +247,79 @@ M.togglePrio = function(newPrio)
 	end
 end
 
-M.createPrioButtons = function()
-	M.prioButtons = {}
-	for i = 1, 5 do
-		local toggleButton = CreateFrame("Button", "EzAssignPrioButton_" .. i, M.mainFrame, "GameMenuButtonTemplate")
-		local highlightTexture = toggleButton:GetHighlightTexture()
-		toggleButton:SetText("Priority " .. i)
-		toggleButton:SetSize(120, 22)
-		toggleButton:SetPoint("TOPLEFT", M.mainFrame, "TOPLEFT", (i - 1) * 120, 22)
-		toggleButton:HookScript("OnClick", function(self)
-			M.togglePrio(i)
-			M.displayList(M.currentList)
-		end)
-		table.insert(M.prioButtons, { button = toggleButton, highlight = highlightTexture })
+M.displayList = function(listName)
+	local list = EZAssignDB.lists[listName][M.prio] or {}
+	M.currentList = listName
+	M.mainFrame.Title:SetText(listName .. " Assignments")
+	M.EditListNameInput:SetText(listName)
+	M.EditListNameInput:SetWidth(M.Max(string.len(M.currentList) * 9, 120))
+	for i, item in pairs(M.nameInputs) do
+		if list[i] ~= nil then
+			item:SetText(list[i].name or "")
+		else
+			item:SetText("")
+		end
 	end
-	M.togglePrio(M.prio)
+	for i, item in pairs(M.assignmentInputs) do
+		if list[i] ~= nil then
+			item:SetText(list[i].assignment or "")
+		else
+			item:SetText("")
+		end
+	end
 end
 
--- TOGGLE BUTTON
+M.MyAssignmentsFrame = CreateFrame("Frame", "EZAssignAssignment", UIParent, "BasicFrameTemplateWithInset")
+M.MyAssignmentsFrame:SetSize(250, 150)
+M.MyAssignmentsFrame:SetPoint("CENTER", 0, 0)
+M.MyAssignmentsFrame:EnableMouse(true)
+M.MyAssignmentsFrame:SetMovable(true)
+M.MyAssignmentsFrame:RegisterForDrag("LeftButton")
+M.MyAssignmentsFrame:SetScript("OnDragStart", M.MyAssignmentsFrame.StartMoving)
+M.MyAssignmentsFrame:SetScript("OnDragStop", M.MyAssignmentsFrame.StopMovingOrSizing)
+
+M.MyAssignmentsFrame.Title = M.MyAssignmentsFrame:CreateFontString(nil, "OVERLAY")
+M.MyAssignmentsFrame.Title:SetFontObject("GameFontHighlight")
+M.MyAssignmentsFrame.Title:SetPoint("CENTER", M.MyAssignmentsFrame.TitleBg, "CENTER", 11, 0)
+M.MyAssignmentsFrame.Title:SetText("My Assignments")
+M.MyAssignmentsFrame:Hide()
+
+M.MyAssignmentsFrame:RegisterEvent("CHAT_MSG_RAID")
+M.MyAssignmentsFrame:RegisterEvent("CHAT_MSG_RAID_LEADER")
+M.MyAssignmentsFrame:RegisterEvent("CHAT_MSG_RAID_WARNING")
+M.MyAssignmentsFrame:SetScript("OnEvent", function(_, _, msg)
+	local prioReset = msg:match("ASSIGNMENTS SET .- (%d+)$")
+	if prioReset then
+		M.givenPrio = tonumber(prioReset)
+		if M.givenPrio == 1 then
+			M.resetCurrentAssignments()
+		end
+		return
+	end
+	local myName = UnitName("player")
+	local name, str = msg:match("^(.+): (.+)$")
+	local filtered = str:gsub("[{}]", "")
+	if name ~= myName then
+		return
+	end
+	M.myAssignments[M.givenPrio] = filtered
+	if str then
+		M.UpdateAssignment()
+	end
+end)
+
+M.MyAssignmentsText = M.MyAssignmentsFrame:CreateFontString("EZAssignFrameContent", "OVERLAY", normalFont)
+M.MyAssignmentsText:SetPoint("TOPLEFT", 12, -32)
+M.MyAssignmentsText:SetJustifyH("LEFT")
+M.MyAssignmentsText:SetJustifyV("TOP")
+M.MyAssignmentsText:SetWidth(M.MyAssignmentsFrame:GetWidth() - 44)
+M.MyAssignmentsText:SetNonSpaceWrap(true)
+M.MyAssignmentsText:SetFont(STANDARD_TEXT_FONT, 14)
+M.MyAssignmentsText:SetSpacing(5)
+M.MyAssignmentsText:SetText("No assignments")
 
 M.toggleButton = CreateFrame("Button", "EzAssignToggleButton", RaidFrame, "GameMenuButtonTemplate")
-M.toggleButton:SetText("Hide EZ Assign")
+M.toggleButton:SetText("Show EZ Assign")
 M.toggleButton:SetSize(120, 22)
 M.toggleButton:SetPoint("TOPRIGHT", RaidFrame, "TOPRIGHT", 0, 22)
 M.toggleButton:HookScript("OnClick", function()
@@ -427,12 +338,117 @@ M.showMyAssignmentsButton:SetText("My Assignments")
 M.showMyAssignmentsButton:SetSize(120, 22)
 M.showMyAssignmentsButton:SetPoint("RIGHT", M.toggleButton, "LEFT", 0, 0)
 M.showMyAssignmentsButton:HookScript("OnClick", function()
-	if M.assignmentTextFrame:IsShown() then
-		M.assignmentTextFrame:Hide()
+	if M.MyAssignmentsFrame:IsShown() then
+		M.MyAssignmentsFrame:Hide()
 	else
-		M.assignmentTextFrame:Show()
+		M.MyAssignmentsFrame:Show()
 	end
 end)
+
+M.mainFrame = CreateFrame("Frame", "EZAssignMainFrame", UIParent, "BasicFrameTemplateWithInset")
+M.mainFrame:SetSize(800, RaidFrame:GetHeight() + 420)
+M.mainFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+M.mainFrame.Title = M.mainFrame:CreateFontString(nil, "OVERLAY")
+M.mainFrame.Title:SetFontObject("GameFontHighlight")
+M.mainFrame.Title:SetPoint("CENTER", M.mainFrame.TitleBg, "CENTER", 11, 0)
+M.mainFrame.Title:SetText("Default Assignments")
+M.mainFrame.ScrollFrame = CreateFrame("ScrollFrame", nil, M.mainFrame, "UIPanelScrollFrameTemplate")
+M.mainFrame.ScrollFrame:SetPoint("TOPLEFT", M.mainFrame, "TOPLEFT", -26, -80)
+M.mainFrame.ScrollFrame:SetPoint("BOTTOMRIGHT", M.mainFrame, "BOTTOMRIGHT", -31, 6)
+M.mainFrame.ScrollChild = CreateFrame("Frame", nil, M.mainFrame.ScrollFrame)
+M.mainFrame.ScrollChild:SetSize(M.mainFrame.ScrollFrame:GetWidth(), M.mainFrame.ScrollFrame:GetHeight())
+M.mainFrame.ScrollFrame:SetScrollChild(M.mainFrame.ScrollChild)
+M.mainFrame:EnableMouse(true)
+M.mainFrame:SetMovable(true)
+M.mainFrame:RegisterForDrag("LeftButton")
+M.mainFrame:SetScript("OnDragStart", M.mainFrame.StartMoving)
+M.mainFrame:SetScript("OnDragStop", M.mainFrame.StopMovingOrSizing)
+M.mainFrame:Hide()
+
+M.createPrioButtons = function()
+	M.prioButtons = {}
+	for i = 1, 5 do
+		local toggleButton = CreateFrame("Button", "EzAssignPrioButton_" .. i, M.mainFrame, "GameMenuButtonTemplate")
+		local highlightTexture = toggleButton:GetHighlightTexture()
+		toggleButton:SetText("Priority " .. i)
+		toggleButton:SetSize(120, 22)
+		toggleButton:SetPoint("TOPLEFT", M.mainFrame, "TOPLEFT", (i - 1) * 120, 22)
+		toggleButton:HookScript("OnClick", function(self)
+			M.togglePrio(i)
+			M.displayList(M.currentList)
+		end)
+		table.insert(M.prioButtons, { button = toggleButton, highlight = highlightTexture })
+	end
+	M.togglePrio(M.prio)
+end
+
+M.ListDropdownFrame = CreateFrame("Frame", "EZAssign_DropdownFrame", M.mainFrame, "InsetFrameTemplate")
+M.ListDropdownFrame:SetSize(300, 300)
+M.ListDropdownFrame:SetPoint("TOPRIGHT", M.mainFrame, "TOPRIGHT", -30, -40)
+M.ListDropdownFrame:SetFrameStrata("DIALOG")
+M.ListDropdownFrame.ScrollFrame = CreateFrame("ScrollFrame", nil, M.ListDropdownFrame, "UIPanelScrollFrameTemplate")
+M.ListDropdownFrame.ScrollFrame:SetPoint("TOPLEFT", M.ListDropdownFrame, "TOPLEFT", -26, -6)
+M.ListDropdownFrame.ScrollFrame:SetPoint("BOTTOMRIGHT", M.ListDropdownFrame, "BOTTOMRIGHT", -28, 6)
+M.ListDropdownFrame.ScrollChild = CreateFrame("Frame", nil, M.ListDropdownFrame.ScrollFrame)
+M.ListDropdownFrame.ScrollChild:SetSize(M.ListDropdownFrame:GetWidth(), M.ListDropdownFrame:GetHeight() - 100)
+M.ListDropdownFrame.ScrollFrame:SetScrollChild(M.ListDropdownFrame.ScrollChild)
+M.ListDropdownFrame:Hide()
+
+M.EditListNameInput = CreateFrame("EditBox", "EZAssign_List_Name", M.mainFrame, "InputBoxTemplate")
+M.EditListNameInput:SetAutoFocus(false)
+M.EditListNameInput:SetFontObject("GameFontHighlightSmall")
+M.EditListNameInput:SetHeight(22)
+M.EditListNameInput:SetWidth(string.len(M.currentList) * 6)
+M.EditListNameInput:SetJustifyH("LEFT")
+M.EditListNameInput:EnableMouse(true)
+M.EditListNameInput:SetMaxLetters(240)
+M.EditListNameInput:SetTextInsets(0, 5, 2, 0)
+M.EditListNameInput:SetText(M.currentList)
+M.EditListNameInput:SetPoint("TOPLEFT", M.mainFrame, "TOPLEFT", 15, -30)
+
+M.SaveListNameButton = CreateFrame("Button", "EzAssignLisNameSaveButton", M.EditListNameInput, "GameMenuButtonTemplate")
+M.SaveListNameButton:SetText("Save List Name")
+M.SaveListNameButton:SetSize(120, 22)
+M.SaveListNameButton:SetPoint("LEFT", M.EditListNameInput, "RIGHT", 10, 0)
+M.SaveListNameButton:HookScript("OnClick", function()
+	local newName = M.EditListNameInput:GetText()
+	if newName == "" then
+		print("List must have a name")
+		return
+	end
+	EZAssignDB.lists[newName] = EZAssignDB.lists[M.currentList]
+	EZAssignDB.lists[M.currentList] = nil
+	M.currentList = newName
+	M.CreateListDropDowns()
+	M.displayList(M.currentList)
+end)
+
+M.headerName = M.mainFrame:CreateFontString("EZAssignFrameNameLabel", "OVERLAY", normalFont)
+M.headerName:SetPoint("TOPLEFT", 15, -55)
+M.headerName:SetJustifyH("LEFT")
+M.headerName:SetJustifyV("TOP")
+M.headerName:SetWidth(120)
+M.headerName:SetFont(STANDARD_TEXT_FONT, 12)
+M.headerName:SetSpacing(5)
+M.headerName:SetText("Name")
+
+M.headerAssignment = M.mainFrame:CreateFontString("EZAssignFrameAssignmentLabel", "OVERLAY", normalFont)
+M.headerAssignment:SetPoint("TOPLEFT", 155, -55)
+M.headerAssignment:SetJustifyH("LEFT")
+M.headerAssignment:SetJustifyV("TOP")
+M.headerAssignment:SetWidth(200)
+M.headerAssignment:SetFont(STANDARD_TEXT_FONT, 12)
+M.headerAssignment:SetSpacing(5)
+M.headerAssignment:SetText("Assignment")
+
+M.headerDeleteList = M.mainFrame:CreateFontString("EZAssignFrameAssignmentLabel", "OVERLAY", normalFont)
+M.headerDeleteList:SetPoint("TOPRIGHT", -40, -55)
+M.headerDeleteList:SetJustifyH("RIGHT")
+M.headerDeleteList:SetJustifyV("TOP")
+M.headerDeleteList:SetWidth(250)
+M.headerDeleteList:SetFont(STANDARD_TEXT_FONT, 12)
+M.headerDeleteList:SetSpacing(5)
+M.headerDeleteList:SetText("To delete: /ezdelete NameOfList")
 
 M.IssueAssignmentsButton = CreateFrame("Button", "EzAssignToggleButton", M.mainFrame, "GameMenuButtonTemplate")
 M.IssueAssignmentsButton:SetText("Issue Assignments")
@@ -442,6 +458,18 @@ M.IssueAssignmentsButton:HookScript("OnClick", function()
 	SendChatMessage("ASSIGNMENTS SET - " .. M.currentList .. " - " .. M.prio, "RAID_WARNING")
 	M.assignList()
 end)
+
+M.newListInput = M.createInputBox({
+	name = "EZAssign_CreateListInput",
+	parent = M.newListButton,
+	width = 120,
+	onTextChanged = function(self, userInput)
+		if userInput then
+			M.modifyListName(self:GetText())
+		end
+	end,
+})
+M.newListInput:SetPoint("RIGHT", M.newListButton, "LEFT", 0, 0)
 
 M.newListButton = CreateFrame("Button", "EzAssignToggleButton", M.mainFrame, "GameMenuButtonTemplate")
 M.newListButton:SetText("Create New List")
@@ -460,50 +488,15 @@ M.newListButton:HookScript("OnClick", function()
 	M.newListInput:SetText("")
 end)
 
-M.newListInput = M.createInputBox({
-	name = "EZAssign_CreateListInput",
-	parent = M.newListButton,
-	width = 120,
-	onTextChanged = function(self, userInput)
-		if userInput then
-			M.modifyListName(self:GetText())
-		end
-	end,
-})
-M.newListInput:SetPoint("RIGHT", M.newListButton, "LEFT", 0, 0)
-
-M.displayList = function(listName)
-	local list = EZAssignDB.lists[listName][M.prio] or {}
-	M.currentList = listName
-	M.mainFrame.Title:SetText(listName .. " Assignments")
-	M.ListNameInput:SetText(listName)
-	M.ListNameInput:SetWidth(M.Max(string.len(M.currentList) * 9, 120))
-	for i, item in pairs(M.nameInputs) do
-		if list[i] ~= nil then
-			item:SetText(list[i].name or "")
-		else
-			item:SetText("")
-		end
-	end
-	for i, item in pairs(M.assignmentInputs) do
-		if list[i] ~= nil then
-			item:SetText(list[i].assignment or "")
-		else
-			item:SetText("")
-		end
-	end
-end
-
-M.ListDropdownToggle =
-	CreateFrame("Button", "EzAssignDropDownToggle", M.mainFrame.ScrollChild, "GameMenuButtonTemplate")
+M.ListDropdownToggle = CreateFrame("Button", "EzAssignDropDownToggle", M.mainFrame, "GameMenuButtonTemplate")
 M.ListDropdownToggle:SetText("Change List")
 M.ListDropdownToggle:SetSize(120, 22)
-M.ListDropdownToggle:SetPoint("TOPRIGHT", M.mainFrame.ScrollChild, "TOPRIGHT", -5, 0)
+M.ListDropdownToggle:SetPoint("TOPRIGHT", M.mainFrame, "TOPRIGHT", -40, -30)
 M.ListDropdownToggle:HookScript("OnClick", function()
-	if M.DropdownFrame:IsShown() then
-		M.DropdownFrame:Hide()
+	if M.ListDropdownFrame:IsShown() then
+		M.ListDropdownFrame:Hide()
 	else
-		M.DropdownFrame:Show()
+		M.ListDropdownFrame:Show()
 	end
 end)
 
@@ -511,7 +504,7 @@ M.CreateDropDownButton = function(listName)
 	local button = CreateFrame(
 		"Button",
 		"EzAssignDropDownButton_" .. listName,
-		M.DropdownFrame.ScrollChild,
+		M.ListDropdownFrame.ScrollChild,
 		"GameMenuButtonTemplate"
 	)
 	button:SetText(listName)
@@ -519,7 +512,7 @@ M.CreateDropDownButton = function(listName)
 	button:HookScript("OnClick", function()
 		M.togglePrio(1)
 		M.displayList(listName)
-		M.DropdownFrame:Hide()
+		M.ListDropdownFrame:Hide()
 	end)
 	return button
 end
@@ -539,7 +532,7 @@ M.CreateListDropDowns = function()
 	table.sort(listNames)
 	for i, list in ipairs(listNames) do
 		local button = M.CreateDropDownButton(list)
-		button:SetPoint("TOPLEFT", M.DropdownFrame.ScrollChild, "TOPLEFT", 30, -22 * (i - 1))
+		button:SetPoint("TOPLEFT", M.ListDropdownFrame.ScrollChild, "TOPLEFT", 30, -22 * (i - 1))
 		table.insert(M.listDDs, button)
 	end
 end
@@ -550,8 +543,8 @@ M.mainFrame:RegisterEvent("CHAT_MSG_RAID_LEADER")
 local addonF = CreateFrame("Frame")
 addonF:RegisterEvent("CHAT_MSG_ADDON")
 addonF:RegisterEvent("ADDON_LOADED")
-addonF:SetScript("OnEvent", function(self, event, ...)
-	local arg1, command = ...
+addonF:SetScript("OnEvent", function(_, event, ...)
+	local arg1 = ...
 	if arg1 == "EZAssign" then
 		if event == "ADDON_LOADED" then
 			if EZAssignDB.lists.Default then
@@ -569,7 +562,6 @@ addonF:SetScript("OnEvent", function(self, event, ...)
 	end
 end)
 
-SlashCmdList["RESET"] = M.resetCurrentAssignments
 SlashCmdList["RESETDB"] = M.resetDB
 SlashCmdList["DB"] = function()
 	print("-----------------------")
