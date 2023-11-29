@@ -298,6 +298,9 @@ M.MyAssignmentsFrame:SetScript("OnEvent", function(_, _, msg)
 	end
 	local myName = UnitName("player")
 	local name, str = msg:match("^(.+): (.+)$")
+	if not str then
+		return
+	end
 	local filtered = str:gsub("[{}]", "")
 	if name ~= myName then
 		return
